@@ -69,18 +69,51 @@ CREATE TABLE IF NOT EXISTS communications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create meetings table
+-- Create comprehensive meetings table with all details
 CREATE TABLE IF NOT EXISTS meetings (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title TEXT NOT NULL,
     contact_id TEXT NOT NULL,
     contact_name TEXT NOT NULL,
+    contact_email TEXT,
+    contact_phone TEXT,
+    contact_company TEXT,
     date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE,
     duration INTEGER NOT NULL DEFAULT 60,
+    timezone TEXT DEFAULT 'UTC',
+    location TEXT,
+    meeting_type TEXT NOT NULL DEFAULT 'virtual' CHECK (meeting_type IN ('virtual', 'in-person', 'phone')),
     description TEXT DEFAULT '',
+    agenda TEXT DEFAULT '',
+    objectives TEXT DEFAULT '',
     meet_link TEXT,
-    status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    meeting_room TEXT,
+    dial_in_number TEXT,
+    passcode TEXT,
+    host_name TEXT,
+    host_email TEXT,
+    attendees TEXT DEFAULT '', -- JSON array as text or comma-separated
+    status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in-progress', 'completed', 'cancelled', 'no-show')),
+    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    recurring_type TEXT CHECK (recurring_type IN ('none', 'daily', 'weekly', 'biweekly', 'monthly')),
+    recurring_until DATE,
+    parent_meeting_id UUID REFERENCES meetings(id),
+    reminder_sent BOOLEAN DEFAULT false,
+    reminder_time INTEGER DEFAULT 15, -- minutes before meeting
+    notes TEXT DEFAULT '',
+    outcome TEXT DEFAULT '',
+    follow_up_required BOOLEAN DEFAULT false,
+    follow_up_date DATE,
+    recording_link TEXT,
+    documents TEXT DEFAULT '', -- JSON array as text or comma-separated file URLs
+    tags TEXT DEFAULT '',
+    cost DECIMAL(10,2) DEFAULT 0,
+    currency TEXT DEFAULT 'USD',
+    created_by TEXT,
+    updated_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Add foreign key constraint for meetings to contacts
@@ -93,6 +126,10 @@ CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
 CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company);
 CREATE INDEX IF NOT EXISTS idx_meetings_date ON meetings(date);
 CREATE INDEX IF NOT EXISTS idx_meetings_contact_id ON meetings(contact_id);
+CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
+CREATE INDEX IF NOT EXISTS idx_meetings_type ON meetings(meeting_type);
+CREATE INDEX IF NOT EXISTS idx_meetings_priority ON meetings(priority);
+CREATE INDEX IF NOT EXISTS idx_meetings_host_email ON meetings(host_email);
 CREATE INDEX IF NOT EXISTS idx_communications_contact_id ON communications(contact_id);
 CREATE INDEX IF NOT EXISTS idx_communications_timestamp ON communications(timestamp);
 
@@ -116,6 +153,9 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_meetings_updated_at BEFORE UPDATE ON meetings 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Enable Row Level Security (RLS)
