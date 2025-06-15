@@ -11,27 +11,40 @@ import { useData } from "@/contexts/DataContext";
 const NewDealForm = ({ onClose }: { onClose: () => void }) => {
   const { toast } = useToast();
   const { addDeal } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     contact: "",
     value: "",
     stage: "New",
     notes: "",
-    expectedCloseDate: ""
+    expected_close_date: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    addDeal(formData);
-    console.log("Creating deal:", formData);
-    
-    toast({
-      title: "Deal Created",
-      description: `${formData.title} has been added to your pipeline.`,
-    });
-    
-    onClose();
+    try {
+      await addDeal(formData);
+      console.log("Deal created successfully:", formData);
+      
+      toast({
+        title: "Deal Created",
+        description: `${formData.title} has been added to your pipeline.`,
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error creating deal:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create deal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -53,6 +66,7 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => handleChange("title", e.target.value)}
             required
             placeholder="Enter deal title"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -63,6 +77,7 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.contact}
             onChange={(e) => handleChange("contact", e.target.value)}
             placeholder="Associated contact name"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -74,6 +89,7 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.value}
             onChange={(e) => handleChange("value", e.target.value)}
             placeholder="50000"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -84,6 +100,7 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.stage}
             onChange={(e) => handleChange("stage", e.target.value)}
             className="w-full h-10 px-3 rounded-md border border-input bg-background"
+            disabled={isSubmitting}
           >
             <option value="New">New</option>
             <option value="Contacted">Contacted</option>
@@ -97,8 +114,9 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
           <Input
             id="expectedCloseDate"
             type="date"
-            value={formData.expectedCloseDate}
-            onChange={(e) => handleChange("expectedCloseDate", e.target.value)}
+            value={formData.expected_close_date}
+            onChange={(e) => handleChange("expected_close_date", e.target.value)}
+            disabled={isSubmitting}
           />
         </div>
         
@@ -110,14 +128,17 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => handleChange("notes", e.target.value)}
             placeholder="Deal notes and details"
             rows={3}
+            disabled={isSubmitting}
           />
         </div>
         
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit">Create Deal</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Deal"}
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

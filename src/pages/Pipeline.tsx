@@ -4,14 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, DollarSign, TrendingUp } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { useState } from "react";
 import NewDealForm from "@/components/forms/NewDealForm";
 import { useData } from "@/contexts/DataContext";
 
 const Pipeline = () => {
   const [isNewDealOpen, setIsNewDealOpen] = useState(false);
-  const { deals } = useData();
+  const { deals, loading } = useData();
   
   const stages = ["New", "Contacted", "Proposal", "Won"];
   
@@ -27,6 +27,19 @@ const Pipeline = () => {
   };
 
   const stagesWithData = stages.map(getStageData);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-6 flex items-center justify-center min-h-96">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading pipeline data...</span>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -98,9 +111,9 @@ const Pipeline = () => {
                               <Badge variant="outline" className="text-xs">
                                 ₹{parseFloat(deal.value || '0').toLocaleString()}
                               </Badge>
-                              {deal.expectedCloseDate && (
+                              {deal.expected_close_date && (
                                 <span className="text-xs text-gray-500">
-                                  {new Date(deal.expectedCloseDate).toLocaleDateString()}
+                                  {new Date(deal.expected_close_date).toLocaleDateString()}
                                 </span>
                               )}
                             </div>

@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface Contact {
   id: string;
@@ -10,7 +11,7 @@ interface Contact {
   tags: string;
   notes: string;
   status: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 interface Deal {
@@ -20,19 +21,19 @@ interface Deal {
   value: string;
   stage: string;
   notes: string;
-  expectedCloseDate: string;
-  createdAt: Date;
+  expected_close_date: string;
+  created_at: Date;
 }
 
 interface Task {
   id: string;
   title: string;
   description: string;
-  dueDate: string;
+  due_date: string;
   priority: string;
   contact: string;
   status: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 interface Template {
@@ -41,7 +42,7 @@ interface Template {
   subject: string;
   content: string;
   category: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 interface DataContextType {
@@ -49,10 +50,12 @@ interface DataContextType {
   deals: Deal[];
   tasks: Task[];
   templates: Template[];
-  addContact: (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
-  addDeal: (deal: Omit<Deal, 'id' | 'createdAt'>) => void;
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
-  addTemplate: (template: Omit<Template, 'id' | 'createdAt'>) => void;
+  loading: boolean;
+  addContact: (contact: Omit<Contact, 'id' | 'created_at'>) => Promise<void>;
+  addDeal: (deal: Omit<Deal, 'id' | 'created_at'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'created_at'>) => Promise<void>;
+  addTemplate: (template: Omit<Template, 'id' | 'created_at'>) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -62,45 +65,202 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addContact = (contactData: Omit<Contact, 'id' | 'createdAt'>) => {
-    const newContact: Contact = {
-      ...contactData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
+  const fetchContacts = async () => {
+    console.log('Fetching contacts...');
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching contacts:', error);
+      return;
+    }
+
+    setContacts(data.map(contact => ({
+      ...contact,
+      created_at: new Date(contact.created_at)
+    })));
+    console.log('Contacts fetched:', data);
+  };
+
+  const fetchDeals = async () => {
+    console.log('Fetching deals...');
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching deals:', error);
+      return;
+    }
+
+    setDeals(data.map(deal => ({
+      ...deal,
+      value: deal.value?.toString() || '0',
+      expected_close_date: deal.expected_close_date || '',
+      created_at: new Date(deal.created_at)
+    })));
+    console.log('Deals fetched:', data);
+  };
+
+  const fetchTasks = async () => {
+    console.log('Fetching tasks...');
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching tasks:', error);
+      return;
+    }
+
+    setTasks(data.map(task => ({
+      ...task,
+      due_date: task.due_date || '',
+      created_at: new Date(task.created_at)
+    })));
+    console.log('Tasks fetched:', data);
+  };
+
+  const fetchTemplates = async () => {
+    console.log('Fetching templates...');
+    const { data, error } = await supabase
+      .from('templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching templates:', error);
+      return;
+    }
+
+    setTemplates(data.map(template => ({
+      ...template,
+      created_at: new Date(template.created_at)
+    })));
+    console.log('Templates fetched:', data);
+  };
+
+  const refreshData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchContacts(),
+      fetchDeals(),
+      fetchTasks(),
+      fetchTemplates()
+    ]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  const addContact = async (contactData: Omit<Contact, 'id' | 'created_at'>) => {
+    console.log('Adding contact:', contactData);
+    const { data, error } = await supabase
+      .from('contacts')
+      .insert([contactData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding contact:', error);
+      throw error;
+    }
+
+    const newContact = {
+      ...data,
+      created_at: new Date(data.created_at)
     };
+    
     setContacts(prev => [newContact, ...prev]);
-    console.log('Added contact:', newContact);
+    console.log('Contact added:', newContact);
   };
 
-  const addDeal = (dealData: Omit<Deal, 'id' | 'createdAt'>) => {
-    const newDeal: Deal = {
+  const addDeal = async (dealData: Omit<Deal, 'id' | 'created_at'>) => {
+    console.log('Adding deal:', dealData);
+    const dealToInsert = {
       ...dealData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
+      value: dealData.value ? parseFloat(dealData.value) : 0,
+      expected_close_date: dealData.expected_close_date || null
     };
+
+    const { data, error } = await supabase
+      .from('deals')
+      .insert([dealToInsert])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding deal:', error);
+      throw error;
+    }
+
+    const newDeal = {
+      ...data,
+      value: data.value?.toString() || '0',
+      expected_close_date: data.expected_close_date || '',
+      created_at: new Date(data.created_at)
+    };
+    
     setDeals(prev => [newDeal, ...prev]);
-    console.log('Added deal:', newDeal);
+    console.log('Deal added:', newDeal);
   };
 
-  const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTask: Task = {
+  const addTask = async (taskData: Omit<Task, 'id' | 'created_at'>) => {
+    console.log('Adding task:', taskData);
+    const taskToInsert = {
       ...taskData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
+      due_date: taskData.due_date || null
     };
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([taskToInsert])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding task:', error);
+      throw error;
+    }
+
+    const newTask = {
+      ...data,
+      due_date: data.due_date || '',
+      created_at: new Date(data.created_at)
+    };
+    
     setTasks(prev => [newTask, ...prev]);
-    console.log('Added task:', newTask);
+    console.log('Task added:', newTask);
   };
 
-  const addTemplate = (templateData: Omit<Template, 'id' | 'createdAt'>) => {
-    const newTemplate: Template = {
-      ...templateData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
+  const addTemplate = async (templateData: Omit<Template, 'id' | 'created_at'>) => {
+    console.log('Adding template:', templateData);
+    const { data, error } = await supabase
+      .from('templates')
+      .insert([templateData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding template:', error);
+      throw error;
+    }
+
+    const newTemplate = {
+      ...data,
+      created_at: new Date(data.created_at)
     };
+    
     setTemplates(prev => [newTemplate, ...prev]);
-    console.log('Added template:', newTemplate);
+    console.log('Template added:', newTemplate);
   };
 
   return (
@@ -109,10 +269,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deals,
       tasks,
       templates,
+      loading,
       addContact,
       addDeal,
       addTask,
       addTemplate,
+      refreshData,
     }}>
       {children}
     </DataContext.Provider>
