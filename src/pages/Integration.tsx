@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Copy, Eye, Trash2, ExternalLink, BarChart3, Database } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Copy, Eye, Trash2, ExternalLink, Database, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -19,18 +21,13 @@ interface FormField {
   options?: string[];
 }
 
-interface FormAnalytics {
-  totalSubmissions: number;
-  todaySubmissions: number;
-  yesterdaySubmissions: number;
-  thisWeekSubmissions: number;
-  lastWeekSubmissions: number;
-  thisMonthSubmissions: number;
-  lastMonthSubmissions: number;
-  conversionRate: number;
-  averageSubmissionsPerDay: number;
-  peakSubmissionHour: string;
-  topReferrerSource: string;
+interface FormSubmission {
+  id: string;
+  formId: string;
+  data: Record<string, string>;
+  submittedAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 interface IntegrationForm {
@@ -40,7 +37,7 @@ interface IntegrationForm {
   fields: FormField[];
   embedUrl: string;
   createdAt: Date;
-  analytics: FormAnalytics;
+  submissions: FormSubmission[];
 }
 
 const MAX_FORMS = 3;
@@ -54,6 +51,7 @@ const Integration = () => {
     fields: []
   });
   const [previewForm, setPreviewForm] = useState<IntegrationForm | null>(null);
+  const [viewSubmissionsForm, setViewSubmissionsForm] = useState<IntegrationForm | null>(null);
   const [showSqlCode, setShowSqlCode] = useState(false);
   const { toast } = useToast();
 
@@ -71,20 +69,6 @@ const Integration = () => {
     const formId = generateRandomId();
     return `${window.location.origin}/embed/${formId}`;
   };
-
-  const generateExactAnalytics = (): FormAnalytics => ({
-    totalSubmissions: Math.floor(Math.random() * 1247) + 50,
-    todaySubmissions: Math.floor(Math.random() * 12) + 1,
-    yesterdaySubmissions: Math.floor(Math.random() * 15) + 2,
-    thisWeekSubmissions: Math.floor(Math.random() * 67) + 8,
-    lastWeekSubmissions: Math.floor(Math.random() * 72) + 12,
-    thisMonthSubmissions: Math.floor(Math.random() * 234) + 25,
-    lastMonthSubmissions: Math.floor(Math.random() * 287) + 31,
-    conversionRate: Math.floor(Math.random() * 1847) / 100 + 2.5,
-    averageSubmissionsPerDay: Math.floor(Math.random() * 847) / 100 + 3.2,
-    peakSubmissionHour: `${Math.floor(Math.random() * 12) + 1}:00 ${Math.random() > 0.5 ? 'PM' : 'AM'}`,
-    topReferrerSource: ['Google', 'Direct', 'Facebook', 'LinkedIn', 'Twitter'][Math.floor(Math.random() * 5)]
-  });
 
   const generateSqlCode = () => {
     return `-- Create forms table
@@ -219,7 +203,7 @@ GROUP BY f.id, f.name;`;
       fields: currentForm.fields!,
       embedUrl: generateEmbedUrl(),
       createdAt: new Date(),
-      analytics: generateExactAnalytics()
+      submissions: []
     };
 
     setForms(prev => [...prev, newForm]);
@@ -441,6 +425,14 @@ GROUP BY f.id, f.name;`;
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setViewSubmissionsForm(form)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Submissions ({form.submissions.length})
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => copyEmbedCode(form)}
                       >
                         <Copy className="h-4 w-4 mr-1" />
@@ -480,63 +472,19 @@ GROUP BY f.id, f.name;`;
                     </div>
                   </div>
                   
-                  {/* Exact Analytics Section */}
                   <div className="border-t pt-4">
-                    <div className="flex items-center mb-3">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      <Label className="text-sm font-medium">Detailed Analytics</Label>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <div className="font-bold text-lg text-blue-700">{form.analytics.totalSubmissions}</div>
-                        <div className="text-blue-600">Total Submissions</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-700">{form.submissions.length}</div>
+                        <div className="text-blue-600 text-sm">Total Submissions</div>
                       </div>
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <div className="font-bold text-lg text-green-700">{form.analytics.todaySubmissions}</div>
-                        <div className="text-green-600">Today</div>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-green-700">{form.fields.length}</div>
+                        <div className="text-green-600 text-sm">Form Fields</div>
                       </div>
-                      <div className="bg-purple-50 p-3 rounded-lg">
-                        <div className="font-bold text-lg text-purple-700">{form.analytics.thisWeekSubmissions}</div>
-                        <div className="text-purple-600">This Week</div>
-                      </div>
-                      <div className="bg-orange-50 p-3 rounded-lg">
-                        <div className="font-bold text-lg text-orange-700">{form.analytics.thisMonthSubmissions}</div>
-                        <div className="text-orange-600">This Month</div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <div className="font-medium">{form.analytics.yesterdaySubmissions}</div>
-                        <div className="text-gray-600">Yesterday</div>
-                      </div>
-                      <div>
-                        <div className="font-medium">{form.analytics.lastWeekSubmissions}</div>
-                        <div className="text-gray-600">Last Week</div>
-                      </div>
-                      <div>
-                        <div className="font-medium">{form.analytics.lastMonthSubmissions}</div>
-                        <div className="text-gray-600">Last Month</div>
-                      </div>
-                      <div>
-                        <div className="font-medium">{form.analytics.conversionRate.toFixed(2)}%</div>
-                        <div className="text-gray-600">Conversion Rate</div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 pt-3 border-t grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <div className="font-medium">{form.analytics.averageSubmissionsPerDay.toFixed(1)}</div>
-                        <div className="text-gray-600">Avg. Submissions/Day</div>
-                      </div>
-                      <div>
-                        <div className="font-medium">{form.analytics.peakSubmissionHour}</div>
-                        <div className="text-gray-600">Peak Hour</div>
-                      </div>
-                      <div>
-                        <div className="font-medium">{form.analytics.topReferrerSource}</div>
-                        <div className="text-gray-600">Top Source</div>
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-700">{new Date(form.createdAt).toLocaleDateString()}</div>
+                        <div className="text-purple-600 text-sm">Created</div>
                       </div>
                     </div>
                   </div>
@@ -581,6 +529,59 @@ GROUP BY f.id, f.name;`;
                   </div>
                 ))}
                 <Button className="w-full">Submit</Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Submissions Dialog */}
+        <Dialog open={!!viewSubmissionsForm} onOpenChange={() => setViewSubmissionsForm(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Form Submissions: {viewSubmissionsForm?.name}</DialogTitle>
+              <DialogDescription>
+                View all form submissions for this form
+              </DialogDescription>
+            </DialogHeader>
+            {viewSubmissionsForm && (
+              <div className="space-y-4">
+                {viewSubmissionsForm.submissions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No submissions yet</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Submissions will appear here once people start filling out your form
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Submitted At</TableHead>
+                          {viewSubmissionsForm.fields.map(field => (
+                            <TableHead key={field.id}>{field.label}</TableHead>
+                          ))}
+                          <TableHead>IP Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewSubmissionsForm.submissions.map(submission => (
+                          <TableRow key={submission.id}>
+                            <TableCell>
+                              {submission.submittedAt.toLocaleDateString()} {submission.submittedAt.toLocaleTimeString()}
+                            </TableCell>
+                            {viewSubmissionsForm.fields.map(field => (
+                              <TableCell key={field.id}>
+                                {submission.data[field.name] || '-'}
+                              </TableCell>
+                            ))}
+                            <TableCell>{submission.ipAddress || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>
