@@ -365,10 +365,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('meetings')
-        .select(`
-          *,
-          contacts(name, company)
-        `)
+        .select('*')
         .order('date', { ascending: false });
 
       if (error) {
@@ -377,10 +374,16 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const meetings = data?.map(meeting => ({
-        ...meeting,
+        id: meeting.id,
+        title: meeting.title,
+        contact_id: meeting.contact_id,
+        contact_name: meeting.contact_name,
         date: new Date(meeting.date),
+        duration: meeting.duration,
+        description: meeting.description || '',
+        meet_link: meeting.meet_link || '',
+        status: meeting.status,
         created_at: new Date(meeting.created_at),
-        contact_name: meeting.contacts ? `${meeting.contacts.name} - ${meeting.contacts.company}` : 'Unknown Contact'
       })) || [];
 
       console.log('Meetings fetched successfully:', meetings);
@@ -426,23 +429,42 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const addMeeting = async (meetingData: Omit<Meeting, 'id' | 'created_at' | 'meet_link'>) => {
     try {
-      const meetingWithLink = {
-        ...meetingData,
-        meet_link: `https://meet.google.com/${Math.random().toString(36).substr(2, 9)}`,
+      console.log('Adding meeting with data:', meetingData);
+      
+      const meetingToInsert = {
+        contact_id: meetingData.contact_id,
+        contact_name: meetingData.contact_name,
+        title: meetingData.title,
         date: meetingData.date.toISOString(),
+        duration: meetingData.duration,
+        description: meetingData.description || '',
+        meet_link: `https://meet.google.com/${Math.random().toString(36).substr(2, 9)}`,
+        status: meetingData.status || 'scheduled'
       };
+
+      console.log('Inserting meeting:', meetingToInsert);
 
       const { data, error } = await supabase
         .from('meetings')
-        .insert([meetingWithLink])
+        .insert([meetingToInsert])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       const newMeeting = {
-        ...data,
+        id: data.id,
+        title: data.title,
+        contact_id: data.contact_id,
+        contact_name: data.contact_name,
         date: new Date(data.date),
+        duration: data.duration,
+        description: data.description || '',
+        meet_link: data.meet_link || '',
+        status: data.status,
         created_at: new Date(data.created_at),
       };
 
