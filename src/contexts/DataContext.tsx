@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase';
 
 interface Contact {
   id: string;
@@ -8,6 +9,9 @@ interface Contact {
   email: string;
   phone: string;
   title: string;
+  status: string;
+  tags: string;
+  notes: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -19,6 +23,8 @@ interface Deal {
   stage: string;
   value: string;
   close_date: string;
+  expected_close_date: string;
+  notes: string;
   created_at: Date;
   updated_at: Date;
 }
