@@ -2,9 +2,14 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Zap, Mail } from "lucide-react";
+import { useState } from "react";
+import NewTemplateForm from "@/components/forms/NewTemplateForm";
 
 const Templates = () => {
+  const [isNewTemplateOpen, setIsNewTemplateOpen] = useState(false);
+
   return (
     <Layout>
       <div className="p-6">
@@ -18,10 +23,15 @@ const Templates = () => {
               <Zap className="h-4 w-4 mr-2" />
               AI Generate
             </Button>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Template
-            </Button>
+            <Dialog open={isNewTemplateOpen} onOpenChange={setIsNewTemplateOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Template
+                </Button>
+              </DialogTrigger>
+              <NewTemplateForm onClose={() => setIsNewTemplateOpen(false)} />
+            </Dialog>
           </div>
         </div>
 
@@ -86,10 +96,15 @@ const Templates = () => {
                   <Zap className="h-4 w-4 mr-2" />
                   AI Generate
                 </Button>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Template
-                </Button>
+                <Dialog open={isNewTemplateOpen} onOpenChange={setIsNewTemplateOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Template
+                    </Button>
+                  </DialogTrigger>
+                  <NewTemplateForm onClose={() => setIsNewTemplateOpen(false)} />
+                </Dialog>
               </div>
             </div>
           </CardContent>

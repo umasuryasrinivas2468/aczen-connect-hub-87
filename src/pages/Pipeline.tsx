@@ -2,10 +2,15 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, DollarSign, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import NewDealForm from "@/components/forms/NewDealForm";
 
 const Pipeline = () => {
+  const [isNewDealOpen, setIsNewDealOpen] = useState(false);
+  
   const stages = [
     { name: "New", deals: 0, value: "₹0" },
     { name: "Contacted", deals: 0, value: "₹0" },
@@ -21,10 +26,15 @@ const Pipeline = () => {
             <h1 className="text-3xl font-bold text-gray-900">Sales Pipeline</h1>
             <p className="text-gray-600 mt-1">Track your deals through the sales process</p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Deal
-          </Button>
+          <Dialog open={isNewDealOpen} onOpenChange={setIsNewDealOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Deal
+              </Button>
+            </DialogTrigger>
+            <NewDealForm onClose={() => setIsNewDealOpen(false)} />
+          </Dialog>
         </div>
 
         {/* Pipeline Overview */}

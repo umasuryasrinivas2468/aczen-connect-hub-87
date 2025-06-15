@@ -2,9 +2,14 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, CheckSquare } from "lucide-react";
+import { useState } from "react";
+import NewTaskForm from "@/components/forms/NewTaskForm";
 
 const Tasks = () => {
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
+
   return (
     <Layout>
       <div className="p-6">
@@ -13,10 +18,15 @@ const Tasks = () => {
             <h1 className="text-3xl font-bold text-gray-900">Tasks & Reminders</h1>
             <p className="text-gray-600 mt-1">Manage your tasks and stay on top of follow-ups</p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </Button>
+          <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Task
+              </Button>
+            </DialogTrigger>
+            <NewTaskForm onClose={() => setIsNewTaskOpen(false)} />
+          </Dialog>
         </div>
 
         {/* Task Stats */}
@@ -63,10 +73,15 @@ const Tasks = () => {
               <CheckSquare className="h-16 w-16 mx-auto mb-4 text-gray-300" />
               <h3 className="text-xl font-semibold mb-2">No tasks yet</h3>
               <p className="text-gray-400 mb-6">Stay organized by creating your first task</p>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Task
-              </Button>
+              <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Task
+                  </Button>
+                </DialogTrigger>
+                <NewTaskForm onClose={() => setIsNewTaskOpen(false)} />
+              </Dialog>
             </div>
           </CardContent>
         </Card>
