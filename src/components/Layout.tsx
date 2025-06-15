@@ -1,8 +1,7 @@
 
-import { UserButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Search, Users, BarChart3, CheckSquare, MessageSquare, FileText, Home } from "lucide-react";
+import { Building2, Search, Users, BarChart3, CheckSquare, MessageSquare, FileText, Home, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -77,13 +76,9 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
             
             <div className="flex items-center gap-3">
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: "h-8 w-8"
-                  }
-                }}
-              />
+              <div className="flex items-center justify-center h-8 w-8 bg-purple-600 rounded-full">
+                <User className="h-4 w-4 text-white" />
+              </div>
             </div>
           </div>
         </header>
