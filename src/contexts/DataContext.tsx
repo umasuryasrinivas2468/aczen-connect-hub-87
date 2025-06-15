@@ -431,6 +431,15 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('Adding meeting with data:', meetingData);
       
+      // Generate Google Meet link with proper format (with dashes)
+      const generateMeetLink = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        const generateSegment = (length: number) => {
+          return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        };
+        return `https://meet.google.com/${generateSegment(3)}-${generateSegment(4)}-${generateSegment(3)}`;
+      };
+      
       const meetingToInsert = {
         contact_id: meetingData.contact_id,
         contact_name: meetingData.contact_name,
@@ -438,7 +447,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         date: meetingData.date.toISOString(),
         duration: meetingData.duration,
         description: meetingData.description || '',
-        meet_link: `https://meet.google.com/${Math.random().toString(36).substr(2, 9)}`,
+        meet_link: generateMeetLink(),
         status: meetingData.status || 'scheduled'
       };
 

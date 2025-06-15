@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -370,6 +369,7 @@ const Meetings = () => {
           onClose={() => setIsModalOpen(false)}
           onSchedule={handleScheduleMeeting}
           contacts={contacts}
+          meetings={meetings}
           selectedDate={selectedDate}
         />
       </div>

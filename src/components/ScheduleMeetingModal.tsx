@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Clock, Video, Mail } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,11 +20,25 @@ interface Contact {
   company: string;
 }
 
+interface Meeting {
+  id: string;
+  title: string;
+  contact_id: string;
+  contact_name: string;
+  date: Date;
+  duration: number;
+  description: string;
+  meet_link: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  created_at: Date;
+}
+
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSchedule: (meetingData: any) => void;
   contacts: Contact[];
+  meetings: Meeting[];
   selectedDate?: Date | null;
 }
 
@@ -33,6 +47,7 @@ const ScheduleMeetingModal = ({
   onClose, 
   onSchedule, 
   contacts, 
+  meetings,
   selectedDate 
 }: ScheduleMeetingModalProps) => {
   const [formData, setFormData] = useState({
@@ -60,6 +75,20 @@ const ScheduleMeetingModal = ({
     }));
   };
 
+  const checkTimeConflict = (meetingDateTime: Date, duration: number) => {
+    const meetingEnd = new Date(meetingDateTime.getTime() + duration * 60000);
+    
+    return meetings.some(existing => {
+      if (existing.status === 'cancelled') return false;
+      
+      const existingStart = new Date(existing.date);
+      const existingEnd = new Date(existingStart.getTime() + existing.duration * 60000);
+      
+      // Check for overlap
+      return (meetingDateTime < existingEnd && meetingEnd > existingStart);
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -76,6 +105,26 @@ const ScheduleMeetingModal = ({
     const [hours, minutes] = formData.time.split(':').map(Number);
     const meetingDateTime = new Date(formData.date);
     meetingDateTime.setHours(hours, minutes, 0, 0);
+
+    // Check if meeting is in the past
+    if (isBefore(meetingDateTime, new Date())) {
+      toast({
+        title: "Error",
+        description: "Cannot schedule meetings in the past",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for time conflicts
+    if (checkTimeConflict(meetingDateTime, formData.duration)) {
+      toast({
+        title: "Time Conflict",
+        description: "Another meeting is already scheduled at this time",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const meetingData = {
       ...formData,
@@ -162,6 +211,7 @@ const ScheduleMeetingModal = ({
                     mode="single"
                     selected={formData.date}
                     onSelect={(date) => date && setFormData(prev => ({ ...prev, date }))}
+                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
                     initialFocus
                     className="pointer-events-auto"
                   />
