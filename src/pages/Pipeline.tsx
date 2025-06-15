@@ -3,20 +3,14 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreHorizontal, DollarSign } from "lucide-react";
+import { Plus, DollarSign, TrendingUp } from "lucide-react";
 
 const Pipeline = () => {
   const stages = [
-    { name: "New", deals: 5, value: "₹2,50,000" },
-    { name: "Contacted", deals: 8, value: "₹4,80,000" },
-    { name: "Proposal", deals: 3, value: "₹1,20,000" },
-    { name: "Won", deals: 12, value: "₹6,40,000" },
-  ];
-
-  const deals = [
-    { id: 1, name: "Acme Corp Deal", company: "Acme Corp", value: "₹2,50,000", stage: "New" },
-    { id: 2, name: "Tech Solutions Project", company: "Tech Solutions", value: "₹1,80,000", stage: "Contacted" },
-    { id: 3, name: "Global Industries Contract", company: "Global Industries", value: "₹3,20,000", stage: "Proposal" },
+    { name: "New", deals: 0, value: "₹0" },
+    { name: "Contacted", deals: 0, value: "₹0" },
+    { name: "Proposal", deals: 0, value: "₹0" },
+    { name: "Won", deals: 0, value: "₹0" },
   ];
 
   return (
@@ -66,22 +60,11 @@ const Pipeline = () => {
                     <Badge variant="secondary">{stage.deals}</Badge>
                   </div>
                   <div className="space-y-2 min-h-[400px] bg-gray-50 rounded-lg p-3">
-                    {deals
-                      .filter(deal => deal.stage === stage.name)
-                      .map((deal) => (
-                        <Card key={deal.id} className="cursor-move hover:shadow-md transition-shadow">
-                          <CardContent className="p-3">
-                            <div className="font-medium text-sm">{deal.name}</div>
-                            <div className="text-xs text-gray-500 mb-2">{deal.company}</div>
-                            <div className="flex items-center justify-between">
-                              <Badge variant="outline" className="text-xs">{deal.value}</Badge>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="text-center py-16 text-gray-400">
+                      <TrendingUp className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">No deals in {stage.name}</p>
+                      <p className="text-xs">Add deals to get started</p>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -6,47 +6,36 @@ import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, DollarSign, CheckSquare, Plus, Calendar, ArrowUpRight } from "lucide-react";
 
 const Dashboard = () => {
+  // Production-ready empty states - ready for real data integration
   const stats = [
     {
       title: "Total Contacts",
-      value: "1,234",
-      change: "+12%",
+      value: "0",
+      change: "0%",
       changeType: "positive" as const,
       icon: Users,
     },
     {
       title: "Active Deals",
-      value: "24",
-      change: "+8%",
+      value: "0",
+      change: "0%",
       changeType: "positive" as const,
       icon: TrendingUp,
     },
     {
       title: "Revenue Forecast",
-      value: "₹4,56,789",
-      change: "+23%",
+      value: "₹0",
+      change: "0%",
       changeType: "positive" as const,
       icon: DollarSign,
     },
     {
       title: "Tasks Due",
-      value: "12",
-      change: "-4%",
-      changeType: "negative" as const,
+      value: "0",
+      change: "0%",
+      changeType: "positive" as const,
       icon: CheckSquare,
     },
-  ];
-
-  const recentDeals = [
-    { name: "Acme Corp", value: "₹2,50,000", stage: "Proposal", priority: "high" },
-    { name: "Tech Solutions", value: "₹1,80,000", stage: "Negotiation", priority: "medium" },
-    { name: "Global Industries", value: "₹3,20,000", stage: "Contacted", priority: "high" },
-  ];
-
-  const upcomingTasks = [
-    { title: "Follow up with Acme Corp", due: "Today", priority: "high" },
-    { title: "Send proposal to Tech Solutions", due: "Tomorrow", priority: "medium" },
-    { title: "Schedule demo call", due: "Dec 18", priority: "low" },
   ];
 
   return (
@@ -114,24 +103,10 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentDeals.map((deal, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <div className="font-medium text-gray-900">{deal.name}</div>
-                      <div className="text-sm text-gray-500">{deal.stage}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">{deal.value}</div>
-                      <Badge 
-                        variant={deal.priority === "high" ? "destructive" : deal.priority === "medium" ? "default" : "secondary"}
-                        className="text-xs"
-                      >
-                        {deal.priority}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-gray-500">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">No deals yet</p>
+                <p className="text-sm">Start by creating your first deal</p>
               </div>
             </CardContent>
           </Card>
@@ -148,27 +123,10 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {upcomingTasks.map((task, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <CheckSquare className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <div className="font-medium text-gray-900">{task.title}</div>
-                        <div className="text-sm text-gray-500 flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {task.due}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant={task.priority === "high" ? "destructive" : task.priority === "medium" ? "default" : "secondary"}
-                      className="text-xs"
-                    >
-                      {task.priority}
-                    </Badge>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-gray-500">
+                <CheckSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">No tasks scheduled</p>
+                <p className="text-sm">Add tasks to stay organized</p>
               </div>
             </CardContent>
           </Card>
