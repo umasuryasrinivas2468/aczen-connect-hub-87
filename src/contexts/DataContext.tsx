@@ -44,16 +44,32 @@ interface Template {
   created_at: Date;
 }
 
+interface Communication {
+  id: string;
+  contact_id: string;
+  contact_name: string;
+  contact_company: string;
+  type: 'call' | 'email' | 'meeting' | 'note';
+  timestamp: string;
+  summary: string;
+  notes: string;
+  user_id: string;
+  user_name: string;
+  created_at: Date;
+}
+
 interface DataContextType {
   contacts: Contact[];
   deals: Deal[];
   tasks: Task[];
   templates: Template[];
+  communications: Communication[];
   loading: boolean;
   addContact: (contact: Omit<Contact, 'id' | 'created_at'>) => Promise<void>;
   addDeal: (deal: Omit<Deal, 'id' | 'created_at'>) => Promise<void>;
   addTask: (task: Omit<Task, 'id' | 'created_at'>) => Promise<void>;
   addTemplate: (template: Omit<Template, 'id' | 'created_at'>) => Promise<void>;
+  addCommunication: (communication: Omit<Communication, 'id' | 'contact_name' | 'contact_company' | 'user_name' | 'created_at'>) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -67,6 +83,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  const [communications, setCommunications] = useState<Communication[]>([]);
 
   const fetchContacts = async () => {
     try {
@@ -163,6 +180,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const fetchCommunications = async () => {
+    try {
+      console.log('Fetching communications...');
+      const { data, error } = await supabase
+        .from('communications')
+        .select(`
+          *,
+          contact:contacts(name, company)
+        `)
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching communications:', error);
+        return;
+      }
+
+      setCommunications(data.map(comm => ({
+        ...comm,
+        contact_name: comm.contact?.name || 'Unknown',
+        contact_company: comm.contact?.company || 'Unknown',
+        user_name: 'Current User', // This would come from auth context
+        created_at: new Date(comm.created_at)
+      })));
+      console.log('Communications fetched successfully:', data);
+    } catch (error) {
+      console.error('Exception in fetchCommunications:', error);
+    }
+  };
+
   const refreshData = async () => {
     console.log('Starting data refresh...');
     setLoading(true);
@@ -172,7 +218,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         fetchContacts(),
         fetchDeals(),
         fetchTasks(),
-        fetchTemplates()
+        fetchTemplates(),
+        fetchCommunications()
       ]);
       console.log('Data refresh completed successfully');
     } catch (error) {
@@ -290,6 +337,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     console.log('Template added:', newTemplate);
   };
 
+  const addCommunication = async (communicationData: Omit<Communication, 'id' | 'contact_name' | 'contact_company' | 'user_name' | 'created_at'>) => {
+    console.log('Adding communication:', communicationData);
+    const { data, error } = await supabase
+      .from('communications')
+      .insert([communicationData])
+      .select(`
+        *,
+        contact:contacts(name, company)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error adding communication:', error);
+      throw error;
+    }
+
+    const newCommunication = {
+      ...data,
+      contact_name: data.contact?.name || 'Unknown',
+      contact_company: data.contact?.company || 'Unknown',
+      user_name: 'Current User',
+      created_at: new Date(data.created_at)
+    };
+    
+    setCommunications(prev => [newCommunication, ...prev]);
+    console.log('Communication added:', newCommunication);
+  };
+
   console.log('DataProvider providing context with:', {
     contactsCount: contacts.length,
     dealsCount: deals.length,
@@ -304,11 +379,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deals,
       tasks,
       templates,
+      communications,
       loading,
       addContact,
       addDeal,
       addTask,
       addTemplate,
+      addCommunication,
       refreshData,
     }}>
       {children}
