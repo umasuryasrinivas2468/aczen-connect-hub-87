@@ -4,10 +4,11 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Clock, Users, Video, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Plus, Clock, Users, Video, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { useData } from "@/contexts/DataContext";
 import ScheduleMeetingModal from "@/components/ScheduleMeetingModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Meeting {
   id: string;
@@ -23,54 +24,33 @@ interface Meeting {
 }
 
 const Meetings = () => {
-  const { contacts } = useData();
+  const { contacts, meetings, addMeeting } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+  const [selectedDayMeetings, setSelectedDayMeetings] = useState<Meeting[]>([]);
 
-  // Mock meetings data - in real app this would come from database
-  const [meetings, setMeetings] = useState<Meeting[]>([
-    {
-      id: '1',
-      title: 'Product Demo',
-      contact_id: 'contact-1',
-      contact_name: 'John Smith',
-      date: new Date(2025, 5, 20, 14, 0),
-      duration: 60,
-      description: 'Demo of our latest features',
-      meet_link: 'https://meet.google.com/abc-defg-hij',
-      status: 'scheduled',
-      created_at: new Date(),
-    },
-    {
-      id: '2',
-      title: 'Project Kickoff',
-      contact_id: 'contact-2',
-      contact_name: 'Sarah Johnson',
-      date: new Date(2025, 5, 22, 10, 0),
-      duration: 30,
-      description: 'Initial project discussion',
-      meet_link: 'https://meet.google.com/xyz-uvwx-yz',
-      status: 'scheduled',
-      created_at: new Date(),
-    }
-  ]);
-
-  const handleScheduleMeeting = (meetingData: any) => {
-    const newMeeting: Meeting = {
-      id: Date.now().toString(),
-      ...meetingData,
-      meet_link: `https://meet.google.com/${Math.random().toString(36).substr(2, 9)}`,
-      status: 'scheduled' as const,
-      created_at: new Date(),
-    };
-    setMeetings(prev => [...prev, newMeeting]);
+  const handleScheduleMeeting = async (meetingData: any) => {
+    await addMeeting(meetingData);
     setIsModalOpen(false);
   };
 
   const getMeetingsForDate = (date: Date) => {
     return meetings.filter(meeting => isSameDay(meeting.date, date));
+  };
+
+  const handleDayClick = (date: Date) => {
+    const dayMeetings = getMeetingsForDate(date);
+    setSelectedDate(date);
+    setSelectedDayMeetings(dayMeetings);
+    setIsDayModalOpen(true);
+  };
+
+  const handleScheduleFromDay = () => {
+    setIsDayModalOpen(false);
+    setIsModalOpen(true);
   };
 
   const getTotalMeetings = () => meetings.length;
@@ -104,10 +84,7 @@ const Meetings = () => {
               className={`min-h-24 p-1 border border-gray-100 cursor-pointer hover:bg-gray-50 ${
                 !isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''
               } ${isToday(day) ? 'bg-blue-50 border-blue-200' : ''}`}
-              onClick={() => {
-                setSelectedDate(day);
-                setIsModalOpen(true);
-              }}
+              onClick={() => handleDayClick(day)}
             >
               <div className={`text-sm font-medium mb-1 ${isToday(day) ? 'text-blue-600' : ''}`}>
                 {format(day, 'd')}
@@ -171,10 +148,7 @@ const Meetings = () => {
                 <div
                   key={`${day.toISOString()}-${hour}`}
                   className="min-h-12 p-1 border border-gray-100 cursor-pointer hover:bg-gray-50"
-                  onClick={() => {
-                    setSelectedDate(new Date(day.setHours(hour, 0, 0, 0)));
-                    setIsModalOpen(true);
-                  }}
+                  onClick={() => handleDayClick(new Date(day.setHours(hour, 0, 0, 0)))}
                 >
                   {dayMeetings.map(meeting => (
                     <div
@@ -308,6 +282,87 @@ const Meetings = () => {
             {view === 'month' ? renderMonthView() : renderWeekView()}
           </CardContent>
         </Card>
+
+        {/* Day Details Modal */}
+        <Dialog open={isDayModalOpen} onOpenChange={setIsDayModalOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-purple-600" />
+                {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy')}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {selectedDayMeetings.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-900">Scheduled Meetings</h3>
+                  {selectedDayMeetings.map((meeting) => (
+                    <div key={meeting.id} className="p-3 border rounded-lg bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{meeting.title}</h4>
+                          <p className="text-sm text-gray-600">{meeting.contact_name}</p>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {format(meeting.date, 'HH:mm')} ({meeting.duration} min)
+                            </div>
+                            <Badge variant={
+                              meeting.status === 'scheduled' ? 'default' :
+                              meeting.status === 'completed' ? 'secondary' : 'destructive'
+                            }>
+                              {meeting.status}
+                            </Badge>
+                          </div>
+                          {meeting.description && (
+                            <p className="text-sm text-gray-600 mt-2">{meeting.description}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {meeting.meet_link && (
+                        <div className="mt-3 pt-3 border-t">
+                          <a 
+                            href={meeting.meet_link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                          >
+                            <Video className="h-4 w-4" />
+                            Join Google Meet
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>No meetings scheduled for this day</p>
+                </div>
+              )}
+
+              <div className="pt-4 border-t">
+                <Button 
+                  onClick={handleScheduleFromDay}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Schedule Meeting
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Schedule Meeting Modal */}
         <ScheduleMeetingModal
