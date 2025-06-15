@@ -7,6 +7,7 @@ import Contacts from "@/pages/Contacts";
 import Pipeline from "@/pages/Pipeline";
 import Tasks from "@/pages/Tasks";
 import Communications from "@/pages/Communications";
+import Meetings from "@/pages/Meetings";
 import Templates from "@/pages/Templates";
 import Integration from "@/pages/Integration";
 import NotFound from "@/pages/NotFound";
@@ -26,6 +27,7 @@ function App() {
               <Route path="/pipeline" element={<Pipeline />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/communications" element={<Communications />} />
+              <Route path="/meetings" element={<Meetings />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/integration" element={<Integration />} />
               <Route path="*" element={<NotFound />} />
