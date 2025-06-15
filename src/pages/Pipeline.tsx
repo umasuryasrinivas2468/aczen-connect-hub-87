@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, DollarSign, TrendingUp, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, DollarSign, TrendingUp, Loader2, MoreHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import NewDealForm from "@/components/forms/NewDealForm";
 import { useData } from "@/contexts/DataContext";
@@ -14,10 +15,16 @@ import { useToast } from "@/hooks/use-toast";
 
 const Pipeline = () => {
   const [isNewDealOpen, setIsNewDealOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { deals, loading, refreshData } = useData();
   const { toast } = useToast();
   
   const stages = ["New", "Contacted", "Proposal", "Won"];
+  
+  // Fix for react-beautiful-dnd SSR issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const getStageData = (stageName: string) => {
     const stageDeals = deals.filter(deal => deal.stage === stageName);
@@ -32,24 +39,8 @@ const Pipeline = () => {
 
   const stagesWithData = stages.map(getStageData);
 
-  const handleDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-
-    // If dropped outside any droppable area
-    if (!destination) {
-      return;
-    }
-
-    // If dropped in the same position
-    if (destination.droppableId === source.droppableId && destination.index === source.index) {
-      return;
-    }
-
-    const newStage = destination.droppableId;
-    const dealId = draggableId;
-
+  const updateDealStage = async (dealId: string, newStage: string) => {
     try {
-      // Update deal stage in database
       const { error } = await supabase
         .from('deals')
         .update({ 
@@ -68,7 +59,6 @@ const Pipeline = () => {
         return;
       }
 
-      // Show success message
       const deal = deals.find(d => d.id === dealId);
       if (deal) {
         if (newStage === "Won") {
@@ -84,7 +74,6 @@ const Pipeline = () => {
         }
       }
 
-      // Refresh data to reflect changes
       await refreshData();
       
     } catch (error) {
@@ -97,7 +86,26 @@ const Pipeline = () => {
     }
   };
 
-  if (loading) {
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) {
+      return;
+    }
+
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return;
+    }
+
+    const newStage = destination.droppableId;
+    await updateDealStage(draggableId, newStage);
+  };
+
+  const handleStageChange = async (dealId: string, newStage: string) => {
+    await updateDealStage(dealId, newStage);
+  };
+
+  if (loading || !mounted) {
     return (
       <Layout>
         <div className="p-6 flex items-center justify-center min-h-96">
@@ -151,13 +159,13 @@ const Pipeline = () => {
         <Card>
           <CardHeader>
             <CardTitle>Pipeline Board</CardTitle>
-            <CardDescription>Drag and drop deals between stages</CardDescription>
+            <CardDescription>Drag and drop deals between stages or use the dropdown to change status</CardDescription>
           </CardHeader>
           <CardContent>
             <DragDropContext onDragEnd={handleDragEnd}>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {stagesWithData.map((stage, stageIndex) => (
-                  <div key={stageIndex} className="space-y-3">
+                  <div key={stage.name} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-gray-900">{stage.name}</h3>
                       <Badge variant="secondary">{stage.deals}</Badge>
@@ -179,7 +187,7 @@ const Pipeline = () => {
                             </div>
                           ) : (
                             stage.items.map((deal, index) => (
-                              <Draggable key={deal.id} draggableId={deal.id} index={index}>
+                              <Draggable key={deal.id} draggableId={deal.id.toString()} index={index}>
                                 {(provided, snapshot) => (
                                   <Card
                                     ref={provided.innerRef}
@@ -193,7 +201,24 @@ const Pipeline = () => {
                                     }}
                                   >
                                     <div className="space-y-2">
-                                      <h4 className="font-medium text-sm">{deal.title}</h4>
+                                      <div className="flex items-start justify-between">
+                                        <h4 className="font-medium text-sm flex-1 pr-2">{deal.title}</h4>
+                                        <Select
+                                          value={deal.stage}
+                                          onValueChange={(value) => handleStageChange(deal.id, value)}
+                                        >
+                                          <SelectTrigger className="w-auto h-6 text-xs border-none shadow-none p-1">
+                                            <MoreHorizontal className="h-3 w-3" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {stages.map((stageName) => (
+                                              <SelectItem key={stageName} value={stageName} className="text-xs">
+                                                {stageName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
                                       {deal.contact && (
                                         <p className="text-xs text-gray-600">{deal.contact}</p>
                                       )}
