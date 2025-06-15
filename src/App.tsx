@@ -8,6 +8,7 @@ import Pipeline from "@/pages/Pipeline";
 import Tasks from "@/pages/Tasks";
 import Communications from "@/pages/Communications";
 import Templates from "@/pages/Templates";
+import Integration from "@/pages/Integration";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -26,6 +27,7 @@ function App() {
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/communications" element={<Communications />} />
               <Route path="/templates" element={<Templates />} />
+              <Route path="/integration" element={<Integration />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

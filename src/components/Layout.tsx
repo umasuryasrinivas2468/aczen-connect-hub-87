@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Search, Users, BarChart3, CheckSquare, MessageSquare, FileText, Home, User } from "lucide-react";
+import { Building2, Search, Users, BarChart3, CheckSquare, MessageSquare, FileText, Home, User, Settings } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ const Layout = ({ children }: LayoutProps) => {
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Communications", href: "/communications", icon: MessageSquare },
     { name: "Templates", href: "/templates", icon: FileText },
+    { name: "Integration", href: "/integration", icon: Settings },
   ];
 
   return (
