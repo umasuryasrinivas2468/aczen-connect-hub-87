@@ -1,9 +1,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Search, Users, BarChart3, CheckSquare, MessageSquare, FileText, Home, User, Settings, Calendar } from "lucide-react";
+import { Building2, Search, Users, BarChart3, CheckSquare, MessageSquare, FileText, Home, User, Settings, Calendar, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth, useOrganization, UserButton, OrganizationSwitcher } from "@clerk/clerk-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,8 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const { signOut } = useAuth();
+  const { organization } = useOrganization();
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: Home },
@@ -29,7 +32,27 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
         <div className="flex h-16 items-center gap-2 px-6 border-b">
           <Building2 className="h-8 w-8 text-purple-600" />
-          <span className="text-xl font-bold text-gray-900">Aczen</span>
+          <div className="flex-1">
+            <span className="text-xl font-bold text-gray-900">Aczen</span>
+            {organization && (
+              <p className="text-xs text-gray-500 truncate">{organization.name}</p>
+            )}
+          </div>
+        </div>
+        
+        {/* Organization Switcher */}
+        <div className="px-3 py-4 border-b">
+          <OrganizationSwitcher 
+            appearance={{
+              elements: {
+                organizationSwitcherTrigger: "w-full justify-start bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md px-3 py-2",
+                organizationSwitcherTriggerIcon: "text-gray-500",
+                organizationPreviewAvatarBox: "w-6 h-6",
+                organizationPreviewMainIdentifier: "text-sm font-medium text-gray-900",
+                organizationPreviewSecondaryIdentifier: "text-xs text-gray-500"
+              }
+            }}
+          />
         </div>
         
         <nav className="mt-6 px-3">
@@ -60,6 +83,27 @@ const Layout = ({ children }: LayoutProps) => {
             })}
           </ul>
         </nav>
+
+        {/* User section at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t bg-gray-50">
+          <div className="flex items-center justify-between">
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-8 h-8"
+                }
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut()}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main content */}
@@ -78,9 +122,11 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center h-8 w-8 bg-purple-600 rounded-full">
-                <User className="h-4 w-4 text-white" />
-              </div>
+              {organization && (
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">{organization.name}</span>
+                </div>
+              )}
             </div>
           </div>
         </header>

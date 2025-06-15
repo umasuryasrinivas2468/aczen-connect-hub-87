@@ -1,5 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn, useAuth } from "@clerk/clerk-react";
 import { DataProvider } from "@/contexts/DataContext";
 import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
@@ -11,10 +12,18 @@ import Meetings from "@/pages/Meetings";
 import Templates from "@/pages/Templates";
 import Integration from "@/pages/Integration";
 import NotFound from "@/pages/NotFound";
+import OrganizationSetup from "@/pages/OrganizationSetup";
 import { Toaster } from "@/components/ui/toaster";
 
-function App() {
-  console.log('App component rendering');
+function AppContent() {
+  const { orgId } = useAuth();
+  
+  console.log('App component rendering with orgId:', orgId);
+  
+  // If user is signed in but no organization, show organization setup
+  if (!orgId) {
+    return <OrganizationSetup />;
+  }
   
   return (
     <div className="app-wrapper">
@@ -37,6 +46,19 @@ function App() {
         </Router>
       </DataProvider>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <SignedOut>
+        <LandingPage />
+      </SignedOut>
+      <SignedIn>
+        <AppContent />
+      </SignedIn>
+    </>
   );
 }
 
