@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Loader2 } from "lucide-react";
 import { useState } from "react";
 import NewContactForm from "@/components/forms/NewContactForm";
 import { useData } from "@/contexts/DataContext";
 
 const Contacts = () => {
   const [isNewContactOpen, setIsNewContactOpen] = useState(false);
-  const { contacts } = useData();
+  const { contacts, loading } = useData();
 
   const contactsByStatus = {
     total: contacts.length,
@@ -21,9 +21,22 @@ const Contacts = () => {
     newThisWeek: contacts.filter(c => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      return c.createdAt > weekAgo;
+      return c.created_at > weekAgo;
     }).length,
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-6 flex items-center justify-center min-h-96">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading contacts...</span>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

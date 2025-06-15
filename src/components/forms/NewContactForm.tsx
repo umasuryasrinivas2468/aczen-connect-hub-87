@@ -11,6 +11,7 @@ import { useData } from "@/contexts/DataContext";
 const NewContactForm = ({ onClose }: { onClose: () => void }) => {
   const { toast } = useToast();
   const { addContact } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,18 +22,30 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
     status: "Active"
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    addContact(formData);
-    console.log("Creating contact:", formData);
-    
-    toast({
-      title: "Contact Created",
-      description: `${formData.name} has been added to your contacts.`,
-    });
-    
-    onClose();
+    try {
+      await addContact(formData);
+      console.log("Contact created successfully:", formData);
+      
+      toast({
+        title: "Contact Created",
+        description: `${formData.name} has been added to your contacts.`,
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create contact. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -54,6 +67,7 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => handleChange("name", e.target.value)}
             required
             placeholder="Enter contact name"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -65,6 +79,7 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.email}
             onChange={(e) => handleChange("email", e.target.value)}
             placeholder="contact@example.com"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -75,6 +90,7 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
             placeholder="+1 (555) 123-4567"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -85,6 +101,7 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.company}
             onChange={(e) => handleChange("company", e.target.value)}
             placeholder="Company name"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -95,6 +112,7 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.tags}
             onChange={(e) => handleChange("tags", e.target.value)}
             placeholder="lead, potential, vip (comma separated)"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -106,14 +124,17 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => handleChange("notes", e.target.value)}
             placeholder="Additional notes about this contact"
             rows={3}
+            disabled={isSubmitting}
           />
         </div>
         
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit">Create Contact</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Contact"}
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

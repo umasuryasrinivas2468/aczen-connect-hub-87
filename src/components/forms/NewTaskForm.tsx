@@ -11,27 +11,40 @@ import { useData } from "@/contexts/DataContext";
 const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
   const { toast } = useToast();
   const { addTask } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    dueDate: "",
+    due_date: "",
     priority: "Medium",
     contact: "",
     status: "Pending"
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    addTask(formData);
-    console.log("Creating task:", formData);
-    
-    toast({
-      title: "Task Created",
-      description: `${formData.title} has been added to your tasks.`,
-    });
-    
-    onClose();
+    try {
+      await addTask(formData);
+      console.log("Task created successfully:", formData);
+      
+      toast({
+        title: "Task Created",
+        description: `${formData.title} has been added to your tasks.`,
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -53,6 +66,7 @@ const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => handleChange("title", e.target.value)}
             required
             placeholder="Enter task title"
+            disabled={isSubmitting}
           />
         </div>
         
@@ -64,16 +78,18 @@ const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => handleChange("description", e.target.value)}
             placeholder="Task description and details"
             rows={3}
+            disabled={isSubmitting}
           />
         </div>
         
         <div>
-          <Label htmlFor="dueDate">Due Date</Label>
+          <Label htmlFor="due_date">Due Date</Label>
           <Input
-            id="dueDate"
+            id="due_date"
             type="date"
-            value={formData.dueDate}
-            onChange={(e) => handleChange("dueDate", e.target.value)}
+            value={formData.due_date}
+            onChange={(e) => handleChange("due_date", e.target.value)}
+            disabled={isSubmitting}
           />
         </div>
         
@@ -84,6 +100,7 @@ const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.priority}
             onChange={(e) => handleChange("priority", e.target.value)}
             className="w-full h-10 px-3 rounded-md border border-input bg-background"
+            disabled={isSubmitting}
           >
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
@@ -98,14 +115,17 @@ const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.contact}
             onChange={(e) => handleChange("contact", e.target.value)}
             placeholder="Associated contact name"
+            disabled={isSubmitting}
           />
         </div>
         
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit">Create Task</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Task"}
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

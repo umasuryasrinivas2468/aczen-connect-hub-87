@@ -1,13 +1,12 @@
-
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, TrendingUp, DollarSign, CheckSquare, Plus, Calendar, ArrowUpRight } from "lucide-react";
+import { Users, TrendingUp, DollarSign, CheckSquare, Plus, Calendar, ArrowUpRight, Loader2 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 
 const Dashboard = () => {
-  const { contacts, deals, tasks } = useData();
+  const { contacts, deals, tasks, loading } = useData();
   
   // Calculate actual stats
   const totalRevenue = deals
@@ -50,6 +49,19 @@ const Dashboard = () => {
 
   const recentDeals = deals.slice(0, 5);
   const upcomingTasks = tasks.filter(task => task.status === "Pending").slice(0, 5);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-6 flex items-center justify-center min-h-96">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading dashboard data...</span>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -171,9 +183,9 @@ const Dashboard = () => {
                         <Badge variant={task.priority === 'High' ? 'destructive' : 'outline'} className="text-xs">
                           {task.priority}
                         </Badge>
-                        {task.dueDate && (
+                        {task.due_date && (
                           <p className="text-xs text-gray-500 mt-1">
-                            {new Date(task.dueDate).toLocaleDateString()}
+                            {new Date(task.due_date).toLocaleDateString()}
                           </p>
                         )}
                       </div>
