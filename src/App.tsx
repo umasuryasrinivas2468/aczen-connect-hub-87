@@ -13,7 +13,7 @@ import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 
 // Import your publishable key
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_placeholder-key-for-development";
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
