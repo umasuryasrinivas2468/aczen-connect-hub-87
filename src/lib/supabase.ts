@@ -2,11 +2,13 @@
 import { createClient } from '@supabase/supabase-js'
 
 console.log('Supabase configuration check...');
-console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Using the actual Supabase credentials provided by the user
+const supabaseUrl = 'https://vkvrelytzvtauxlhunzd.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrdnJlbHl0enZ0YXV4bGh1bnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTY4MjcsImV4cCI6MjA2NTU3MjgyN30.QoAVDGmzyTQq5g1WWGM38aVYHW9tm-d3odMej57_pTM'
+
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Key exists:', !!supabaseKey);
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase environment variables');
