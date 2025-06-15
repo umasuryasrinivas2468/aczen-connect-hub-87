@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useData } from "@/contexts/DataContext";
 
 const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
   const { toast } = useToast();
+  const { addTask } = useData();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -21,7 +23,7 @@ const NewTaskForm = ({ onClose }: { onClose: () => void }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // TODO: Integrate with backend/database
+    addTask(formData);
     console.log("Creating task:", formData);
     
     toast({

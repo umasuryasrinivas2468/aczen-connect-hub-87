@@ -4,39 +4,52 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, DollarSign, CheckSquare, Plus, Calendar, ArrowUpRight } from "lucide-react";
+import { useData } from "@/contexts/DataContext";
 
 const Dashboard = () => {
-  // Production-ready empty states - ready for real data integration
+  const { contacts, deals, tasks } = useData();
+  
+  // Calculate actual stats
+  const totalRevenue = deals
+    .filter(deal => deal.stage === "Won")
+    .reduce((sum, deal) => sum + (parseFloat(deal.value) || 0), 0);
+    
+  const pendingTasks = tasks.filter(task => task.status === "Pending").length;
+  const activeDeals = deals.filter(deal => deal.stage !== "Won").length;
+
   const stats = [
     {
       title: "Total Contacts",
-      value: "0",
+      value: contacts.length.toString(),
       change: "0%",
       changeType: "positive" as const,
       icon: Users,
     },
     {
       title: "Active Deals",
-      value: "0",
+      value: activeDeals.toString(),
       change: "0%",
       changeType: "positive" as const,
       icon: TrendingUp,
     },
     {
-      title: "Revenue Forecast",
-      value: "₹0",
+      title: "Revenue Won",
+      value: `₹${totalRevenue.toLocaleString()}`,
       change: "0%",
       changeType: "positive" as const,
       icon: DollarSign,
     },
     {
       title: "Tasks Due",
-      value: "0",
+      value: pendingTasks.toString(),
       change: "0%",
       changeType: "positive" as const,
       icon: CheckSquare,
     },
   ];
+
+  const recentDeals = deals.slice(0, 5);
+  const upcomingTasks = tasks.filter(task => task.status === "Pending").slice(0, 5);
 
   return (
     <Layout>
@@ -103,11 +116,28 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No deals yet</p>
-                <p className="text-sm">Start by creating your first deal</p>
-              </div>
+              {recentDeals.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">No deals yet</p>
+                  <p className="text-sm">Start by creating your first deal</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentDeals.map((deal) => (
+                    <div key={deal.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{deal.title}</p>
+                        <p className="text-sm text-gray-600">{deal.contact}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">₹{parseFloat(deal.value || '0').toLocaleString()}</p>
+                        <Badge variant="outline" className="text-xs">{deal.stage}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -123,11 +153,34 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <CheckSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No tasks scheduled</p>
-                <p className="text-sm">Add tasks to stay organized</p>
-              </div>
+              {upcomingTasks.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">No tasks scheduled</p>
+                  <p className="text-sm">Add tasks to stay organized</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingTasks.map((task) => (
+                    <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{task.title}</p>
+                        <p className="text-sm text-gray-600">{task.contact}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={task.priority === 'High' ? 'destructive' : 'outline'} className="text-xs">
+                          {task.priority}
+                        </Badge>
+                        {task.dueDate && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(task.dueDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
