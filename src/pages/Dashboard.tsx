@@ -3,13 +3,23 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Users, TrendingUp, DollarSign, CheckSquare, Plus, Calendar, ArrowUpRight, Loader2 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import NewContactForm from "@/components/forms/NewContactForm";
+import NewDealForm from "@/components/forms/NewDealForm";
+import NewTaskForm from "@/components/forms/NewTaskForm";
 
 const Dashboard = () => {
   console.log('Dashboard component rendering');
   
   const { contacts, deals, tasks, loading } = useData();
+  const navigate = useNavigate();
+  const [isNewContactOpen, setIsNewContactOpen] = useState(false);
+  const [isNewDealOpen, setIsNewDealOpen] = useState(false);
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
   
   console.log('Dashboard data:', {
     contactsCount: contacts.length,
@@ -85,14 +95,24 @@ const Dashboard = () => {
             <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your business.</p>
           </div>
           <div className="flex gap-3">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Contact
-            </Button>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Deal
-            </Button>
+            <Dialog open={isNewContactOpen} onOpenChange={setIsNewContactOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Contact
+                </Button>
+              </DialogTrigger>
+              <NewContactForm onClose={() => setIsNewContactOpen(false)} />
+            </Dialog>
+            <Dialog open={isNewDealOpen} onOpenChange={setIsNewDealOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Deal
+                </Button>
+              </DialogTrigger>
+              <NewDealForm onClose={() => setIsNewDealOpen(false)} />
+            </Dialog>
           </div>
         </div>
 
@@ -133,7 +153,7 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Recent Deals
-                <Button variant="outline" size="sm">View All</Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/pipeline')}>View All</Button>
               </CardTitle>
               <CardDescription>
                 Your most recent sales opportunities
@@ -170,7 +190,7 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Upcoming Tasks
-                <Button variant="outline" size="sm">View All</Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/tasks')}>View All</Button>
               </CardTitle>
               <CardDescription>
                 Tasks that need your attention
@@ -219,19 +239,37 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="outline" className="h-20 flex-col">
-                <Users className="h-6 w-6 mb-2" />
-                Add Contact
-              </Button>
-              <Button variant="outline" className="h-20 flex-col">
-                <TrendingUp className="h-6 w-6 mb-2" />
-                Create Deal
-              </Button>
-              <Button variant="outline" className="h-20 flex-col">
-                <CheckSquare className="h-6 w-6 mb-2" />
-                Add Task
-              </Button>
-              <Button variant="outline" className="h-20 flex-col">
+              <Dialog open={isNewContactOpen} onOpenChange={setIsNewContactOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-20 flex-col">
+                    <Users className="h-6 w-6 mb-2" />
+                    Add Contact
+                  </Button>
+                </DialogTrigger>
+                <NewContactForm onClose={() => setIsNewContactOpen(false)} />
+              </Dialog>
+              
+              <Dialog open={isNewDealOpen} onOpenChange={setIsNewDealOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-20 flex-col">
+                    <TrendingUp className="h-6 w-6 mb-2" />
+                    Create Deal
+                  </Button>
+                </DialogTrigger>
+                <NewDealForm onClose={() => setIsNewDealOpen(false)} />
+              </Dialog>
+              
+              <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-20 flex-col">
+                    <CheckSquare className="h-6 w-6 mb-2" />
+                    Add Task
+                  </Button>
+                </DialogTrigger>
+                <NewTaskForm onClose={() => setIsNewTaskOpen(false)} />
+              </Dialog>
+              
+              <Button variant="outline" className="h-20 flex-col" onClick={() => navigate('/meetings')}>
                 <Calendar className="h-6 w-6 mb-2" />
                 Schedule Meeting
               </Button>
