@@ -408,6 +408,38 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         fetchMeetings()
       ]);
 
+      const todayDateString = new Date().toISOString().split('T')[0];
+
+      const dealsToUpdate = dealsData.filter(deal => 
+        deal.stage !== 'Won' && 
+        deal.close_date && 
+        deal.close_date <= todayDateString
+      );
+
+      if (dealsToUpdate.length > 0) {
+        console.log(`Found ${dealsToUpdate.length} deal(s) with past or today's close date. Automatically updating stage to 'Won'.`);
+        const dealIdsToUpdate = dealsToUpdate.map(d => d.id);
+        
+        const { error } = await supabase
+          .from('deals')
+          .update({ stage: 'Won', updated_at: new Date().toISOString() })
+          .in('id', dealIdsToUpdate);
+          
+        if (error) {
+          console.error('Error auto-updating deal stages to Won:', error);
+        } else {
+          // Update local data to reflect the change without a full re-fetch
+          dealsData.forEach(deal => {
+            if (dealIdsToUpdate.includes(deal.id)) {
+                deal.stage = 'Won';
+                deal.updated_at = new Date();
+            }
+          });
+          console.log(`Successfully updated ${dealsToUpdate.length} deal(s) to 'Won'.`);
+        }
+      }
+
+
       setContacts(contactsData);
       setDeals(dealsData);
       setTasks(tasksData);
