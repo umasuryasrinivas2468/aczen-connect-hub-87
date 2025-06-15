@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 
@@ -61,6 +60,8 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
+  console.log('DataProvider rendering...');
+  
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -68,96 +69,122 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchContacts = async () => {
-    console.log('Fetching contacts...');
-    const { data, error } = await supabase
-      .from('contacts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Fetching contacts...');
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching contacts:', error);
-      return;
+      if (error) {
+        console.error('Error fetching contacts:', error);
+        return;
+      }
+
+      setContacts(data.map(contact => ({
+        ...contact,
+        created_at: new Date(contact.created_at)
+      })));
+      console.log('Contacts fetched successfully:', data);
+    } catch (error) {
+      console.error('Exception in fetchContacts:', error);
     }
-
-    setContacts(data.map(contact => ({
-      ...contact,
-      created_at: new Date(contact.created_at)
-    })));
-    console.log('Contacts fetched:', data);
   };
 
   const fetchDeals = async () => {
-    console.log('Fetching deals...');
-    const { data, error } = await supabase
-      .from('deals')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Fetching deals...');
+      const { data, error } = await supabase
+        .from('deals')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching deals:', error);
-      return;
+      if (error) {
+        console.error('Error fetching deals:', error);
+        return;
+      }
+
+      setDeals(data.map(deal => ({
+        ...deal,
+        value: deal.value?.toString() || '0',
+        expected_close_date: deal.expected_close_date || '',
+        created_at: new Date(deal.created_at)
+      })));
+      console.log('Deals fetched successfully:', data);
+    } catch (error) {
+      console.error('Exception in fetchDeals:', error);
     }
-
-    setDeals(data.map(deal => ({
-      ...deal,
-      value: deal.value?.toString() || '0',
-      expected_close_date: deal.expected_close_date || '',
-      created_at: new Date(deal.created_at)
-    })));
-    console.log('Deals fetched:', data);
   };
 
   const fetchTasks = async () => {
-    console.log('Fetching tasks...');
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Fetching tasks...');
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching tasks:', error);
-      return;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        return;
+      }
+
+      setTasks(data.map(task => ({
+        ...task,
+        due_date: task.due_date || '',
+        created_at: new Date(task.created_at)
+      })));
+      console.log('Tasks fetched successfully:', data);
+    } catch (error) {
+      console.error('Exception in fetchTasks:', error);
     }
-
-    setTasks(data.map(task => ({
-      ...task,
-      due_date: task.due_date || '',
-      created_at: new Date(task.created_at)
-    })));
-    console.log('Tasks fetched:', data);
   };
 
   const fetchTemplates = async () => {
-    console.log('Fetching templates...');
-    const { data, error } = await supabase
-      .from('templates')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Fetching templates...');
+      const { data, error } = await supabase
+        .from('templates')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching templates:', error);
-      return;
+      if (error) {
+        console.error('Error fetching templates:', error);
+        return;
+      }
+
+      setTemplates(data.map(template => ({
+        ...template,
+        created_at: new Date(template.created_at)
+      })));
+      console.log('Templates fetched successfully:', data);
+    } catch (error) {
+      console.error('Exception in fetchTemplates:', error);
     }
-
-    setTemplates(data.map(template => ({
-      ...template,
-      created_at: new Date(template.created_at)
-    })));
-    console.log('Templates fetched:', data);
   };
 
   const refreshData = async () => {
+    console.log('Starting data refresh...');
     setLoading(true);
-    await Promise.all([
-      fetchContacts(),
-      fetchDeals(),
-      fetchTasks(),
-      fetchTemplates()
-    ]);
-    setLoading(false);
+    
+    try {
+      await Promise.all([
+        fetchContacts(),
+        fetchDeals(),
+        fetchTasks(),
+        fetchTemplates()
+      ]);
+      console.log('Data refresh completed successfully');
+    } catch (error) {
+      console.error('Error during data refresh:', error);
+    } finally {
+      setLoading(false);
+      console.log('Data refresh finished, loading set to false');
+    }
   };
 
   useEffect(() => {
+    console.log('DataProvider useEffect triggered');
     refreshData();
   }, []);
 
@@ -262,6 +289,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setTemplates(prev => [newTemplate, ...prev]);
     console.log('Template added:', newTemplate);
   };
+
+  console.log('DataProvider providing context with:', {
+    contactsCount: contacts.length,
+    dealsCount: deals.length,
+    tasksCount: tasks.length,
+    templatesCount: templates.length,
+    loading
+  });
 
   return (
     <DataContext.Provider value={{

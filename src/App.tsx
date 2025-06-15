@@ -15,22 +15,24 @@ function App() {
   console.log('App component rendering');
   
   return (
-    <DataProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/pipeline" element={<Pipeline />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/communications" element={<Communications />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </div>
-      </Router>
-    </DataProvider>
+    <div className="app-wrapper">
+      <DataProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/contacts" element={<Contacts />} />
+              <Route path="/pipeline" element={<Pipeline />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/communications" element={<Communications />} />
+              <Route path="/templates" element={<Templates />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </div>
+        </Router>
+      </DataProvider>
+    </div>
   );
 }
 

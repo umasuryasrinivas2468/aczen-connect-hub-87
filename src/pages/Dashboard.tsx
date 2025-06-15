@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,16 @@ import { Users, TrendingUp, DollarSign, CheckSquare, Plus, Calendar, ArrowUpRigh
 import { useData } from "@/contexts/DataContext";
 
 const Dashboard = () => {
+  console.log('Dashboard component rendering');
+  
   const { contacts, deals, tasks, loading } = useData();
+  
+  console.log('Dashboard data:', {
+    contactsCount: contacts.length,
+    dealsCount: deals.length,
+    tasksCount: tasks.length,
+    loading
+  });
   
   // Calculate actual stats
   const totalRevenue = deals
@@ -51,6 +61,7 @@ const Dashboard = () => {
   const upcomingTasks = tasks.filter(task => task.status === "Pending").slice(0, 5);
 
   if (loading) {
+    console.log('Dashboard showing loading state');
     return (
       <Layout>
         <div className="p-6 flex items-center justify-center min-h-96">
@@ -63,6 +74,7 @@ const Dashboard = () => {
     );
   }
 
+  console.log('Dashboard rendering main content');
   return (
     <Layout>
       <div className="p-6">
