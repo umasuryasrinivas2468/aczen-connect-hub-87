@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-react";
 import { DataProvider } from "@/contexts/DataContext";
 import LandingPage from "@/pages/LandingPage";
@@ -20,6 +20,8 @@ if (!PUBLISHABLE_KEY) {
 }
 
 function App() {
+  console.log('App component rendering');
+  
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <DataProvider>

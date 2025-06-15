@@ -35,13 +35,24 @@ interface Task {
   createdAt: Date;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  category: string;
+  createdAt: Date;
+}
+
 interface DataContextType {
   contacts: Contact[];
   deals: Deal[];
   tasks: Task[];
+  templates: Template[];
   addContact: (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
   addDeal: (deal: Omit<Deal, 'id' | 'createdAt'>) => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+  addTemplate: (template: Omit<Template, 'id' | 'createdAt'>) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -50,6 +61,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
 
   const addContact = (contactData: Omit<Contact, 'id' | 'createdAt'>) => {
     const newContact: Contact = {
@@ -58,6 +70,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       createdAt: new Date(),
     };
     setContacts(prev => [newContact, ...prev]);
+    console.log('Added contact:', newContact);
   };
 
   const addDeal = (dealData: Omit<Deal, 'id' | 'createdAt'>) => {
@@ -67,6 +80,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       createdAt: new Date(),
     };
     setDeals(prev => [newDeal, ...prev]);
+    console.log('Added deal:', newDeal);
   };
 
   const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
@@ -76,6 +90,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       createdAt: new Date(),
     };
     setTasks(prev => [newTask, ...prev]);
+    console.log('Added task:', newTask);
+  };
+
+  const addTemplate = (templateData: Omit<Template, 'id' | 'createdAt'>) => {
+    const newTemplate: Template = {
+      ...templateData,
+      id: Date.now().toString(),
+      createdAt: new Date(),
+    };
+    setTemplates(prev => [newTemplate, ...prev]);
+    console.log('Added template:', newTemplate);
   };
 
   return (
@@ -83,9 +108,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       contacts,
       deals,
       tasks,
+      templates,
       addContact,
       addDeal,
       addTask,
+      addTemplate,
     }}>
       {children}
     </DataContext.Provider>
