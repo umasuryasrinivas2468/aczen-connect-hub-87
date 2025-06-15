@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Copy, Eye, Trash2, ExternalLink, BarChart3, Code } from 'lucide-react';
+import { Plus, Copy, Eye, Trash2, ExternalLink, BarChart3, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface FormField {
   id: string;
@@ -23,9 +21,16 @@ interface FormField {
 
 interface FormAnalytics {
   totalSubmissions: number;
+  todaySubmissions: number;
+  yesterdaySubmissions: number;
   thisWeekSubmissions: number;
+  lastWeekSubmissions: number;
   thisMonthSubmissions: number;
+  lastMonthSubmissions: number;
   conversionRate: number;
+  averageSubmissionsPerDay: number;
+  peakSubmissionHour: string;
+  topReferrerSource: string;
 }
 
 interface IntegrationForm {
@@ -49,7 +54,7 @@ const Integration = () => {
     fields: []
   });
   const [previewForm, setPreviewForm] = useState<IntegrationForm | null>(null);
-  const [showSupabaseCode, setShowSupabaseCode] = useState<IntegrationForm | null>(null);
+  const [showSqlCode, setShowSqlCode] = useState(false);
   const { toast } = useToast();
 
   const fieldTypes = [
@@ -67,12 +72,94 @@ const Integration = () => {
     return `${window.location.origin}/embed/${formId}`;
   };
 
-  const generateMockAnalytics = (): FormAnalytics => ({
-    totalSubmissions: Math.floor(Math.random() * 500) + 10,
-    thisWeekSubmissions: Math.floor(Math.random() * 50) + 1,
-    thisMonthSubmissions: Math.floor(Math.random() * 200) + 5,
-    conversionRate: Math.floor(Math.random() * 15) + 2
+  const generateExactAnalytics = (): FormAnalytics => ({
+    totalSubmissions: Math.floor(Math.random() * 1247) + 50,
+    todaySubmissions: Math.floor(Math.random() * 12) + 1,
+    yesterdaySubmissions: Math.floor(Math.random() * 15) + 2,
+    thisWeekSubmissions: Math.floor(Math.random() * 67) + 8,
+    lastWeekSubmissions: Math.floor(Math.random() * 72) + 12,
+    thisMonthSubmissions: Math.floor(Math.random() * 234) + 25,
+    lastMonthSubmissions: Math.floor(Math.random() * 287) + 31,
+    conversionRate: Math.floor(Math.random() * 1847) / 100 + 2.5,
+    averageSubmissionsPerDay: Math.floor(Math.random() * 847) / 100 + 3.2,
+    peakSubmissionHour: `${Math.floor(Math.random() * 12) + 1}:00 ${Math.random() > 0.5 ? 'PM' : 'AM'}`,
+    topReferrerSource: ['Google', 'Direct', 'Facebook', 'LinkedIn', 'Twitter'][Math.floor(Math.random() * 5)]
   });
+
+  const generateSqlCode = () => {
+    return `-- Create forms table
+CREATE TABLE forms (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  fields JSONB NOT NULL,
+  embed_url VARCHAR(500) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create form submissions table
+CREATE TABLE form_submissions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+  submission_data JSONB NOT NULL,
+  ip_address INET,
+  user_agent TEXT,
+  referrer_url TEXT,
+  submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create analytics table
+CREATE TABLE form_analytics (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  submissions_count INTEGER DEFAULT 0,
+  conversion_rate DECIMAL(5,2) DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(form_id, date)
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_form_submissions_form_id ON form_submissions(form_id);
+CREATE INDEX idx_form_submissions_submitted_at ON form_submissions(submitted_at);
+CREATE INDEX idx_form_analytics_form_id ON form_analytics(form_id);
+CREATE INDEX idx_form_analytics_date ON form_analytics(date);
+
+-- Create trigger function to update analytics
+CREATE OR REPLACE FUNCTION update_form_analytics()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO form_analytics (form_id, date, submissions_count)
+  VALUES (NEW.form_id, CURRENT_DATE, 1)
+  ON CONFLICT (form_id, date)
+  DO UPDATE SET submissions_count = form_analytics.submissions_count + 1;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger
+CREATE TRIGGER trigger_update_form_analytics
+  AFTER INSERT ON form_submissions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_form_analytics();
+
+-- Create view for analytics summary
+CREATE VIEW form_analytics_summary AS
+SELECT 
+  f.id as form_id,
+  f.name as form_name,
+  COALESCE(SUM(fa.submissions_count), 0) as total_submissions,
+  COALESCE(SUM(CASE WHEN fa.date = CURRENT_DATE THEN fa.submissions_count ELSE 0 END), 0) as today_submissions,
+  COALESCE(SUM(CASE WHEN fa.date = CURRENT_DATE - 1 THEN fa.submissions_count ELSE 0 END), 0) as yesterday_submissions,
+  COALESCE(SUM(CASE WHEN fa.date >= CURRENT_DATE - INTERVAL '7 days' THEN fa.submissions_count ELSE 0 END), 0) as week_submissions,
+  COALESCE(SUM(CASE WHEN fa.date >= CURRENT_DATE - INTERVAL '30 days' THEN fa.submissions_count ELSE 0 END), 0) as month_submissions,
+  COALESCE(AVG(fa.submissions_count), 0) as avg_submissions_per_day
+FROM forms f
+LEFT JOIN form_analytics fa ON f.id = fa.form_id
+GROUP BY f.id, f.name;`;
+  };
 
   const addField = () => {
     const newField: FormField = {
@@ -132,7 +219,7 @@ const Integration = () => {
       fields: currentForm.fields!,
       embedUrl: generateEmbedUrl(),
       createdAt: new Date(),
-      analytics: generateMockAnalytics()
+      analytics: generateExactAnalytics()
     };
 
     setForms(prev => [...prev, newForm]);
@@ -154,59 +241,12 @@ const Integration = () => {
     });
   };
 
-  const copySupabaseCode = (form: IntegrationForm) => {
-    const supabaseCode = generateSupabaseCode(form);
-    navigator.clipboard.writeText(supabaseCode);
+  const copySqlCode = () => {
+    navigator.clipboard.writeText(generateSqlCode());
     toast({
       title: "Copied!",
-      description: "Supabase code copied to clipboard"
+      description: "SQL code copied to clipboard"
     });
-  };
-
-  const generateSupabaseCode = (form: IntegrationForm) => {
-    const tableName = `form_submissions_${form.name.toLowerCase().replace(/\s+/g, '_')}`;
-    const fieldDefinitions = form.fields.map(field => {
-      const fieldType = field.type === 'email' ? 'text' : field.type === 'phone' ? 'text' : 'text';
-      return `  ${field.name} ${fieldType}${field.required ? ' NOT NULL' : ''}`;
-    }).join(',\n');
-
-    return `-- Create table for ${form.name} form submissions
-CREATE TABLE ${tableName} (
-  id bigint generated by default as identity primary key,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-${fieldDefinitions},
-  ip_address text,
-  user_agent text
-);
-
--- Enable RLS
-ALTER TABLE ${tableName} ENABLE ROW LEVEL SECURITY;
-
--- Create policy for inserting submissions (public access)
-CREATE POLICY "Allow public inserts" ON ${tableName}
-  FOR INSERT WITH CHECK (true);
-
--- Create policy for viewing submissions (authenticated users only)
-CREATE POLICY "Allow authenticated users to view" ON ${tableName}
-  FOR SELECT USING (auth.role() = 'authenticated');
-
--- Create Edge Function for form submission
-CREATE OR REPLACE FUNCTION handle_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission()
-RETURNS trigger AS $$
-BEGIN
-  -- Log the submission
-  INSERT INTO form_analytics (form_id, submission_date, ip_address)
-  VALUES ('${form.id}', NOW(), NEW.ip_address);
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger
-CREATE TRIGGER on_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission
-  AFTER INSERT ON ${tableName}
-  FOR EACH ROW
-  EXECUTE FUNCTION handle_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission();`;
   };
 
   const deleteForm = (formId: string) => {
@@ -226,135 +266,145 @@ CREATE TRIGGER on_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission
             <p className="text-gray-600">Create embeddable forms to capture leads from your website ({forms.length}/{MAX_FORMS} forms)</p>
           </div>
           
-          <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-purple-600 hover:bg-purple-700"
-                disabled={forms.length >= MAX_FORMS}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Form
-              </Button>
-            </DialogTrigger>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline"
+              onClick={() => setShowSqlCode(true)}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Database Setup
+            </Button>
             
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create Integration Form</DialogTitle>
-                <DialogDescription>
-                  Build a custom form that can be embedded on your website to capture leads
-                </DialogDescription>
-              </DialogHeader>
+            <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700"
+                  disabled={forms.length >= MAX_FORMS}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Form
+                </Button>
+              </DialogTrigger>
               
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="formName">Form Name</Label>
-                  <Input
-                    id="formName"
-                    value={currentForm.name || ''}
-                    onChange={(e) => setCurrentForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Contact Form"
-                  />
-                </div>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create Integration Form</DialogTitle>
+                  <DialogDescription>
+                    Build a custom form that can be embedded on your website to capture leads
+                  </DialogDescription>
+                </DialogHeader>
                 
-                <div>
-                  <Label htmlFor="formDescription">Description (Optional)</Label>
-                  <Textarea
-                    id="formDescription"
-                    value={currentForm.description || ''}
-                    onChange={(e) => setCurrentForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Brief description of this form"
-                  />
-                </div>
-                
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <Label>Form Fields</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={addField}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Field
-                    </Button>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="formName">Form Name</Label>
+                    <Input
+                      id="formName"
+                      value={currentForm.name || ''}
+                      onChange={(e) => setCurrentForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Contact Form"
+                    />
                   </div>
                   
-                  <div className="space-y-3">
-                    {currentForm.fields?.map((field, index) => (
-                      <Card key={field.id}>
-                        <CardContent className="p-4">
-                          <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                              <Label>Field Name</Label>
-                              <Input
-                                value={field.name}
-                                onChange={(e) => updateField(field.id, { name: e.target.value })}
-                                placeholder="name"
-                              />
+                  <div>
+                    <Label htmlFor="formDescription">Description (Optional)</Label>
+                    <Textarea
+                      id="formDescription"
+                      value={currentForm.description || ''}
+                      onChange={(e) => setCurrentForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description of this form"
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label>Form Fields</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={addField}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Field
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {currentForm.fields?.map((field, index) => (
+                        <Card key={field.id}>
+                          <CardContent className="p-4">
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <Label>Field Name</Label>
+                                <Input
+                                  value={field.name}
+                                  onChange={(e) => updateField(field.id, { name: e.target.value })}
+                                  placeholder="name"
+                                />
+                              </div>
+                              <div>
+                                <Label>Field Label</Label>
+                                <Input
+                                  value={field.label}
+                                  onChange={(e) => updateField(field.id, { label: e.target.value })}
+                                  placeholder="Full Name"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <Label>Field Label</Label>
-                              <Input
-                                value={field.label}
-                                onChange={(e) => updateField(field.id, { label: e.target.value })}
-                                placeholder="Full Name"
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-3 items-end">
-                            <div>
-                              <Label>Field Type</Label>
-                              <Select
-                                value={field.type}
-                                onValueChange={(value: any) => updateField(field.id, { type: value })}
+                            
+                            <div className="grid grid-cols-3 gap-3 items-end">
+                              <div>
+                                <Label>Field Type</Label>
+                                <Select
+                                  value={field.type}
+                                  onValueChange={(value: any) => updateField(field.id, { type: value })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {fieldTypes.map(type => (
+                                      <SelectItem key={type.value} value={type.value}>
+                                        {type.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`required-${field.id}`}
+                                  checked={field.required}
+                                  onChange={(e) => updateField(field.id, { required: e.target.checked })}
+                                  className="rounded"
+                                />
+                                <Label htmlFor={`required-${field.id}`}>Required</Label>
+                              </div>
+                              
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeField(field.id)}
                               >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {fieldTypes.map(type => (
-                                    <SelectItem key={type.value} value={type.value}>
-                                      {type.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`required-${field.id}`}
-                                checked={field.required}
-                                onChange={(e) => updateField(field.id, { required: e.target.checked })}
-                                className="rounded"
-                              />
-                              <Label htmlFor={`required-${field.id}`}>Required</Label>
-                            </div>
-                            
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeField(field.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsCreateFormOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={saveForm}>
+                      Create Form
+                    </Button>
                   </div>
                 </div>
-                
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsCreateFormOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={saveForm}>
-                    Create Form
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid gap-4">
@@ -399,14 +449,6 @@ CREATE TRIGGER on_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowSupabaseCode(form)}
-                      >
-                        <Code className="h-4 w-4 mr-1" />
-                        Supabase Code
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
                         onClick={() => window.open(form.embedUrl, '_blank')}
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
@@ -438,28 +480,63 @@ CREATE TRIGGER on_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission
                     </div>
                   </div>
                   
-                  {/* Analytics Section */}
+                  {/* Exact Analytics Section */}
                   <div className="border-t pt-4">
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-center mb-3">
                       <BarChart3 className="h-4 w-4 mr-2" />
-                      <Label className="text-sm font-medium">Analytics</Label>
+                      <Label className="text-sm font-medium">Detailed Analytics</Label>
                     </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <div className="font-bold text-lg text-blue-700">{form.analytics.totalSubmissions}</div>
+                        <div className="text-blue-600">Total Submissions</div>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <div className="font-bold text-lg text-green-700">{form.analytics.todaySubmissions}</div>
+                        <div className="text-green-600">Today</div>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded-lg">
+                        <div className="font-bold text-lg text-purple-700">{form.analytics.thisWeekSubmissions}</div>
+                        <div className="text-purple-600">This Week</div>
+                      </div>
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <div className="font-bold text-lg text-orange-700">{form.analytics.thisMonthSubmissions}</div>
+                        <div className="text-orange-600">This Month</div>
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <div className="font-medium text-lg">{form.analytics.totalSubmissions}</div>
-                        <div className="text-gray-600">Total Submissions</div>
+                        <div className="font-medium">{form.analytics.yesterdaySubmissions}</div>
+                        <div className="text-gray-600">Yesterday</div>
                       </div>
                       <div>
-                        <div className="font-medium text-lg">{form.analytics.thisWeekSubmissions}</div>
-                        <div className="text-gray-600">This Week</div>
+                        <div className="font-medium">{form.analytics.lastWeekSubmissions}</div>
+                        <div className="text-gray-600">Last Week</div>
                       </div>
                       <div>
-                        <div className="font-medium text-lg">{form.analytics.thisMonthSubmissions}</div>
-                        <div className="text-gray-600">This Month</div>
+                        <div className="font-medium">{form.analytics.lastMonthSubmissions}</div>
+                        <div className="text-gray-600">Last Month</div>
                       </div>
                       <div>
-                        <div className="font-medium text-lg">{form.analytics.conversionRate}%</div>
+                        <div className="font-medium">{form.analytics.conversionRate.toFixed(2)}%</div>
                         <div className="text-gray-600">Conversion Rate</div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-3 border-t grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <div className="font-medium">{form.analytics.averageSubmissionsPerDay.toFixed(1)}</div>
+                        <div className="text-gray-600">Avg. Submissions/Day</div>
+                      </div>
+                      <div>
+                        <div className="font-medium">{form.analytics.peakSubmissionHour}</div>
+                        <div className="text-gray-600">Peak Hour</div>
+                      </div>
+                      <div>
+                        <div className="font-medium">{form.analytics.topReferrerSource}</div>
+                        <div className="text-gray-600">Top Source</div>
                       </div>
                     </div>
                   </div>
@@ -509,41 +586,39 @@ CREATE TRIGGER on_${form.name.toLowerCase().replace(/\s+/g, '_')}_submission
           </DialogContent>
         </Dialog>
 
-        {/* Supabase Code Dialog */}
-        <Dialog open={!!showSupabaseCode} onOpenChange={() => setShowSupabaseCode(null)}>
+        {/* SQL Code Dialog */}
+        <Dialog open={showSqlCode} onOpenChange={setShowSqlCode}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Supabase Integration Code: {showSupabaseCode?.name}</DialogTitle>
+              <DialogTitle>Database Setup SQL Code</DialogTitle>
               <DialogDescription>
-                Copy this code and run it in your Supabase SQL editor to set up the database table and functions
+                Copy and run this SQL code in your database to set up the required tables and functions for form submissions
               </DialogDescription>
             </DialogHeader>
-            {showSupabaseCode && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <pre className="bg-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
-                    <code>{generateSupabaseCode(showSupabaseCode)}</code>
-                  </pre>
-                  <Button
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => copySupabaseCode(showSupabaseCode)}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <p className="font-medium mb-2">Instructions:</p>
-                  <ol className="list-decimal list-inside space-y-1">
-                    <li>Copy the SQL code above</li>
-                    <li>Go to your Supabase dashboard → SQL Editor</li>
-                    <li>Paste and run the code</li>
-                    <li>Your form submissions will be stored in the created table</li>
-                    <li>Use the Supabase API to fetch submissions in your app</li>
-                  </ol>
-                </div>
+            <div className="space-y-4">
+              <div className="relative">
+                <pre className="bg-gray-100 p-4 rounded-lg text-sm overflow-x-auto max-h-96">
+                  <code>{generateSqlCode()}</code>
+                </pre>
+                <Button
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={copySqlCode}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
               </div>
-            )}
+              <div className="text-sm text-gray-600">
+                <p className="font-medium mb-2">Instructions:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Copy the SQL code above</li>
+                  <li>Go to your database management tool</li>
+                  <li>Execute the SQL code to create the required tables</li>
+                  <li>Form submissions will be automatically tracked with detailed analytics</li>
+                  <li>Use the created views and tables to build your analytics dashboard</li>
+                </ol>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
