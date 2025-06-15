@@ -18,6 +18,7 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
     value: "",
     stage: "New",
     notes: "",
+    close_date: "",
     expected_close_date: ""
   });
 
@@ -116,6 +117,17 @@ const NewDealForm = ({ onClose }: { onClose: () => void }) => {
             type="date"
             value={formData.expected_close_date}
             onChange={(e) => handleChange("expected_close_date", e.target.value)}
+            disabled={isSubmitting}
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="closeDate">Close Date</Label>
+          <Input
+            id="closeDate"
+            type="date"
+            value={formData.close_date}
+            onChange={(e) => handleChange("close_date", e.target.value)}
             disabled={isSubmitting}
           />
         </div>

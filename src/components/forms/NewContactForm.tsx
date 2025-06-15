@@ -17,6 +17,7 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
     email: "",
     phone: "",
     company: "",
+    title: "",
     tags: "",
     notes: "",
     status: "Active"
@@ -101,6 +102,17 @@ const NewContactForm = ({ onClose }: { onClose: () => void }) => {
             value={formData.company}
             onChange={(e) => handleChange("company", e.target.value)}
             placeholder="Company name"
+            disabled={isSubmitting}
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            value={formData.title}
+            onChange={(e) => handleChange("title", e.target.value)}
+            placeholder="Job title"
             disabled={isSubmitting}
           />
         </div>

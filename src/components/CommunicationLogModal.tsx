@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -53,13 +52,18 @@ const CommunicationLogModal = ({ open, onOpenChange }: CommunicationLogModalProp
       const [hours, minutes] = data.time.split(':');
       timestamp.setHours(parseInt(hours), parseInt(minutes));
 
+      const selectedContact = contacts.find(c => c.id === data.contact_id);
+
       await addCommunication({
         contact_id: data.contact_id,
+        contact_name: selectedContact?.name || 'Unknown Contact',
+        contact_company: selectedContact?.company || '',
         type: data.type,
         timestamp: timestamp.toISOString(),
         summary: data.summary,
         notes: data.notes || '',
         user_id: 'current-user', // This would come from auth context
+        user_name: 'Current User', // This would come from auth context
       });
 
       form.reset();
