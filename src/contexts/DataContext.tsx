@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
@@ -92,6 +91,7 @@ interface DataContextType {
   addTemplate: (template: Omit<Template, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   addCommunication: (communication: Omit<Communication, 'id' | 'created_at'>) => Promise<void>;
   addMeeting: (meeting: Omit<Meeting, 'id' | 'created_at' | 'meet_link'>) => Promise<void>;
+  updateTaskStatus: (taskId: string, status: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -485,6 +485,42 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateTaskStatus = async (taskId: string, status: string) => {
+    try {
+      console.log('Updating task status:', { taskId, status });
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      const updatedTask = {
+        ...data,
+        created_at: new Date(data.created_at),
+        updated_at: new Date(data.updated_at)
+      };
+
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? updatedTask : task
+      ));
+      
+      console.log('Task status updated successfully:', updatedTask);
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      throw error;
+    }
+  };
+
   const contextValue: DataContextType = {
     contacts,
     deals,
@@ -500,6 +536,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     addTemplate,
     addCommunication,
     addMeeting,
+    updateTaskStatus,
   };
 
   console.log('DataProvider providing context with:', {

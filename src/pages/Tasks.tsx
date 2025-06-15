@@ -11,7 +11,7 @@ import { useData } from "@/contexts/DataContext";
 
 const Tasks = () => {
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
-  const { tasks, loading } = useData();
+  const { tasks, loading, updateTaskStatus } = useData();
 
   const taskStats = {
     pending: tasks.filter(task => task.status === "Pending").length,
@@ -21,6 +21,15 @@ const Tasks = () => {
       return new Date(task.due_date).toDateString() === today;
     }).length,
     completed: tasks.filter(task => task.status === "Completed").length,
+  };
+
+  const handleStatusClick = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "Pending" ? "Completed" : "Pending";
+    try {
+      await updateTaskStatus(taskId, newStatus);
+    } catch (error) {
+      console.error("Error updating task status:", error);
+    }
   };
 
   if (loading) {
@@ -127,7 +136,12 @@ const Tasks = () => {
                       <Badge variant={task.priority === 'High' ? 'destructive' : task.priority === 'Medium' ? 'default' : 'secondary'}>
                         {task.priority}
                       </Badge>
-                      <Badge variant={task.status === 'Completed' ? 'default' : 'outline'}>
+                      <Badge 
+                        variant={task.status === 'Completed' ? 'default' : 'outline'}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => handleStatusClick(task.id, task.status)}
+                        title="Click to toggle status"
+                      >
                         {task.status}
                       </Badge>
                       {task.due_date && (
